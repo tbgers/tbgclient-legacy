@@ -1,10 +1,14 @@
+"""A TBG API wrapper for Python."""
+
 __version__ = "0.1.0-a"
 import glob, importlib, sys
-from tbgclient import parsers
-from tbgclient.TBGSession import TBGSession
 
-notAllowed = ["__init__","TBGSession"]
+# Import all
+notAllowed = ["__init__"]
 for i in glob.glob("tbgclient/*.py"):
     if "__init__.py" in i: continue
-    globals()[i[10:-3]]=importlib.import_module("tbgclient." + i[10:-3])
-
+    mdl = importlib.import_module(f"tbgclient.{i[10:-3]}")
+    imp_all = False
+    if "_import_all" in dir(mdl): imp_all = mdl._import_all
+    if i[10:-3] in dir(mdl) and not imp_all: mdl = getattr(mdl, i[10:-3])
+    globals()[i[10:-3]] = mdl

@@ -3,7 +3,7 @@ A TBG API wrapper for Python.
 
 The name comes from CubeyTheCube's [scratchclient](https://github.com/CubeyTheCube/scratchclient), which this package is inspired with.
 
-**(This is unfinished, I haven't fixed the code)**
+**(This is unfinished, there's a lot of things I haven't added)**
 
 ## Examples
 ### Post a reply
@@ -23,4 +23,4 @@ session = TBGSession("Tymewalk", "something")
 print(session.get(3).text)
 ```
 
-Documentation will come after I fixed the code.
+Documentation will come later. For now, above examples will suffice.

@@ -1,7 +1,10 @@
 import datetime, re
 from html.parser import HTMLParser
+import warnings
 
 class HTMLSearch(HTMLParser):
+    """A tool to filter/find elements in a HTML document."""
+    # *gasp* Is that JavaScript?
     text=""
     found=None
     layers=0
@@ -78,7 +81,7 @@ class HTMLSearch(HTMLParser):
         if self.found:self.result+=data
 
 def get_post(document,id):
-    """Get post data by PID using HTMLParser"""
+    """Finds the  using HTMLParser"""
     document = HTMLSearch(document)
     if document.getElementByID("msg").text: 
         post = document.getElementByID("msg")
@@ -99,9 +102,22 @@ def get_post(document,id):
         time[1] = datetime.datetime.strptime(time[1],"\u2009%H:%M:%S").time()
         if time[0] == "Today": time = datetime.datetime.combine(datetime.datetime.now().date(),time[1])
         elif time[0] == "Yesterday": 
-                time = datetime.datetime.combine(datetime.datetime.now().date(),time[1])
-                time += datetime.timedelta(days=-1)
+            time = datetime.datetime.combine(datetime.datetime.now().date(),time[1])
+            time += datetime.timedelta(days=-1)
         else: time = datetime.datetime.combine(datetime.datetime.strptime(time[0],"%Y-%b-%d").date(),time[1])
         time = str(time)
-    else: user=None
+    else: 
+        warnings.warn("Cannot find post ID in document",RuntimeWarning)
+        user=None
     return {"rawHTML":post.text,"pid":id,"tid":topic,"fid":forum,"user":user,"text":text,"time":time}
+
+def get_element_by_id(document, id):
+    return HTMLSearch(document).getElementByID(id).text
+
+def get_elements_by_class(document, klas):
+    return [x.text for x in HTMLSearch(document).getElementsByClass(id)]
+
+def get_elements_by_tag_name(document, tag):
+    return [x.text for x in HTMLSearch(document).getElementsByTagName(id)]
+
+__all__ = dir(globals())

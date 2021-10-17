@@ -1,5 +1,10 @@
-"""Parsers for TBGMiner."""
-
-__all__="lxml html".split() # Laziology
-
-# IDEA: a HTML parser via regex?
+"""A modified copy of tbg-scraper's parsers."""
+__all__ = "html lxml".split()
+try:
+    from tbgclient.parsers import html
+    default = html
+except: raise
+try:
+    from tbgclient.parsers import lxml
+    default = lxml
+except: pass
