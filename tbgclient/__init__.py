@@ -1,6 +1,6 @@
 """A TBG API wrapper for Python."""
 
-__version__ = "0.1.0-a"
+__version__ = "0.1.0"
 import glob, importlib, sys
 
 # Import all
