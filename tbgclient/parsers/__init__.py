@@ -7,4 +7,4 @@ except: raise
 try:
     from tbgclient.parsers import lxml
     default = lxml
-except: pass
+except: print("Cannot use lxml, using html instead")

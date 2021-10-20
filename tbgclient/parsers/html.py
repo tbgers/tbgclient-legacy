@@ -2,6 +2,9 @@ import datetime, re
 from html.parser import HTMLParser
 import warnings
 
+# Too many violations: not gonna attempt to comply PEP 8
+
+
 class HTMLSearch(HTMLParser):
     """A tool to filter/find elements in a HTML document."""
     # *gasp* Is that JavaScript?
@@ -80,12 +83,13 @@ class HTMLSearch(HTMLParser):
     def handle_data(self, data):
         if self.found:self.result+=data
 
-def get_post(document,id):
+
+def get_post(document, id):
     """Finds the  using HTMLParser"""
     document = HTMLSearch(document)
     if document.getElementByID("msg").text: 
         post = document.getElementByID("msg")
-        return {"rawHTML":post.text,"pid":id,"tid":None,"fid":None,"user":None,"text":None,"time":None}
+        return {"rawHTML": post.text, "pid": id, "tid": None, "fid": None, "user": None, "text": None, "time": None}
     topic = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-1].text
     topic = int(re.sub(r"""<a href=['"]viewtopic\.php\?id=(\d*)['"]>(?:.*)</a>""",r"\1",topic))
     forum = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-2].text
@@ -109,15 +113,19 @@ def get_post(document,id):
     else: 
         warnings.warn("Cannot find post ID in document",RuntimeWarning)
         user=None
-    return {"rawHTML":post.text,"pid":id,"tid":topic,"fid":forum,"user":user,"text":text,"time":time}
+    return {"rawHTML": post.text, "pid": id, "tid": topic, "fid": forum, "user": user, "text": text, "time": time}
+
 
 def get_element_by_id(document, id):
     return HTMLSearch(document).getElementByID(id).text
 
+
 def get_elements_by_class(document, klas):
     return [x.text for x in HTMLSearch(document).getElementsByClass(id)]
 
+
 def get_elements_by_tag_name(document, tag):
     return [x.text for x in HTMLSearch(document).getElementsByTagName(id)]
+
 
 __all__ = dir(globals())
