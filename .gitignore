@@ -2,3 +2,4 @@ tbgclient/.vs
 tbgclient/__pycache__
 test.py
 *.pyc
+.idea

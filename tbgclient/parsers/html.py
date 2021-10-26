@@ -128,4 +128,32 @@ def get_elements_by_tag_name(document, tag):
     return [x.text for x in HTMLSearch(document).getElementsByTagName(id)]
 
 
+def get_user(document):
+    a = HTMLSearch(document).getElementsByTagName("fieldset")
+    a = [x.getElementsByTagName("dl")[0].text for x in a]
+    k = [[y.group(2) for y in re.finditer(r"<(dt) ?.*?>(.*?)</\1>", x)] for x in a]
+    v = [[y.group(2) for y in re.finditer(r"<(dd) ?.*?>(.*?)</\1>", x)] for x in a]
+    a = [{p: q for p, q in zip(x, y)} for x, y in zip(k, v)]
+    a = {k: v for x in a for k, v in x.items()}
+
+    r = {
+        "username": a["Username"],
+        "title": a["Title"],
+        "location": a["Location"],
+        "website": re.findall(">(.*)<", HTMLSearch(a["Website"]).getElementsByTagName("a")[0].text)[0],
+        "signature": re.findall(">(.*)<", a["Signature"])[0],
+        "realname": a["Real name"],
+        "social": {
+            "Jabber": a["Jabber"],
+            "ICQ": a["ICQ"],
+            "MSN Messenger": a["MSN Messenger"],
+            "AOL IM": a["AOL IM"],
+            "Yahoo! Messenger": a["Yahoo! Messenger"]
+        },
+        "postcount": int(a["Posts"].split(" - ")[0].replace(",", "")),
+        "registered": datetime.datetime.strptime(a["Registered"], "%Y-%b-%d").date()
+    }
+    return r
+
+
 __all__ = dir(globals())
