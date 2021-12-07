@@ -85,7 +85,7 @@ class HTMLSearch(HTMLParser):
 
 
 def get_post(document, id):
-    """Finds the  using HTMLParser"""
+    """Finds post using HTMLParser"""
     document = HTMLSearch(document)
     if document.getElementByID("msg").text: 
         post = document.getElementByID("msg")
@@ -113,7 +113,7 @@ def get_post(document, id):
     else: 
         warnings.warn("Cannot find post ID in document",RuntimeWarning)
         user=None
-    return {"rawHTML": post.text, "pid": id, "tid": topic, "fid": forum, "user": user, "text": text, "time": time}
+    return {"rawHTML": post.text, "pID": id, "tID": topic, "fID": forum, "user": user, "text": text, "time": time}
 
 
 def get_element_by_id(document, id):
@@ -129,7 +129,10 @@ def get_elements_by_tag_name(document, tag):
 
 
 def get_user(document):
-    a = HTMLSearch(document).getElementsByTagName("fieldset")
+    a = HTMLSearch(document)
+    if a.getElementsByClass("blockmenu"): 
+        raise NotImplementedError
+    a = a.getElementsByTagName("fieldset")
     a = [x.getElementsByTagName("dl")[0].text for x in a]
     k = [[y.group(2) for y in re.finditer(r"<(dt) ?.*?>(.*?)</\1>", x)] for x in a]
     v = [[y.group(2) for y in re.finditer(r"<(dd) ?.*?>(.*?)</\1>", x)] for x in a]

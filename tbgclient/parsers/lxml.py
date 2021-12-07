@@ -60,6 +60,7 @@ def get_elements_by_tag_name(document, tag):
 
 def get_user(document):
     a = etree.HTML(document).findall(".//fieldset")
+    if a.findall(".//div[@class=blockmenu]"): raise NotImplementedError
     a = [x.find(".//dl") for x in a]
     k = [x[::2] for x in a]
     v = [x[1::2] for x in a]

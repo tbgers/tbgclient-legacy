@@ -24,5 +24,13 @@ def login(session, user, password):
     req = session.post(f"https://tbgforums.com/forums/login.php?action=in",
                        {"req_username": user, "req_password": password, "form_sent": "1", "login": "Login"}
                        )
-    if req.status_code >= 400: raise TBGException.RequestException(f"Got {req.status_code} at login")
+    if req.status_code >= 400:
+        raise TBGException.RequestException(f"Got {req.status_code} at login")
+    return session, req
+
+
+def get_user(session, uid):
+    req = session.get(f"https://tbgforums.com/forums/profiles.php?id={id}")
+    if req.status_code > 400 and not silent:
+        raise TBGException.RequestException(f"Got {req.status_code} at GET")
     return session, req

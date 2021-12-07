@@ -3,3 +3,6 @@ tbgclient/__pycache__
 test.py
 *.pyc
 .idea
+
+# backup files
+*.*~
