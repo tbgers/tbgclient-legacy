@@ -3,10 +3,10 @@
 __version__ = "0.1.0"
 import glob, importlib, sys
 
-# Import all
 notAllowed = ["__init__"]
 for i in glob.glob("tbgclient/*.py"):
-    if "__init__.py" in i: continue
+    if "__init__.py" in i:
+        continue
     mdl = importlib.import_module(f"tbgclient.{i[10:-3]}")
     imp_all = False
     if "_import_all" in dir(mdl): imp_all = mdl._import_all

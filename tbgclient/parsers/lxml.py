@@ -21,7 +21,7 @@ def get_post(document, id):
         # Check the post
         post = document.find(f".//div[@id='p{id}']")
         if post is not None:
-            user = post.find(".//dl").find(".//dt")[0].text
+            user = etree.tostring(post.find(".//dl").find(".//dt")[0]).decode()[8:-9]
             text = etree.tostring(post.find(".//div[@class='postmsg']")[0]).decode()
             time = post.find(".//a[@href]").text.split(" ")
             time[1] = datetime.datetime.strptime(time[1], "\u2009%H:%M:%S").time()

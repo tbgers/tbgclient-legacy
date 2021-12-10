@@ -1,5 +1,9 @@
 """An implementation of posts."""
-from tbgclient import Flags
+from tbgclient import parsers, api
+from tbgclient.Flags import Flags
+from tbgclient.User import User
+import re
+import requests
 
 
 class Post:
@@ -8,7 +12,7 @@ class Post:
     Parameters
     ----------
     rawHTML: str
-        The raw HTML of
+        The raw HTML of the post.
     pID: int
         The post's post ID number
     tID: int
@@ -17,10 +21,12 @@ class Post:
         The forum ID number this post lies on.
     uID: int
         The poster's user ID number.
-    user: str
-        The poster's username.
+    user: str, tbgclient.User
+        The poster's username, or
     text: str
         The contents of the post.
+    time: str
+        The time when this post is posted.
     """
     rawHTML = ""
     pID = None
@@ -30,11 +36,11 @@ class Post:
     user = None
     text = None
     time = None
+    flags = Flags.NONE
+    session = requests.Session()
 
     def __init__(self, **data):
         self.__dict__.update(data)
-        if Flags.NO_INIT not in self.flags:
-            self.update()
 
     def to_bbcode(self):
         # TODO: Implement HTML to BBCode conversion
@@ -44,9 +50,19 @@ class Post:
         return self.text
 
     def __repr__(self):
-        return f"Post(user={self.user},time={self.time})"
+        return f"Post(user={repr(self.user)},time={repr(self.time)})"
 
-    def update(self):
-        match = re.match('<a href="profile.php?id=(\d+)">', self.rawHTML)
+    def update(self, session):
+        if Flags.NO_INIT in self.flags:
+            return
+        match = re.match(r'<a href="profile\.php\?id=(\d+)">', self.user)
+        print(match, self.user)
         if match:
-            
+            self.uID = int(match.group(1))
+            self.session, req = api.get_user(session.session, self.uID)
+            print(req.text)
+            if Flags.RAW_DATA not in self.flags:
+                self.user = User(**parsers.default.get_user(req.text), flags=self.flags)
+            else:
+                self.user = parsers.default.get_user(req.text)
+

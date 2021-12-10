@@ -1,10 +1,11 @@
-from enum import Flag
+from enum import IntFlag
 
 
-class Flags(Flag):
+class Flags(IntFlag):
     """Flags for tbgclient objects.
+
     These flags are used to control the behavior of an object.
-    
+
     Flags
     -----
     NONE    : None.
