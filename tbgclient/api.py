@@ -1,7 +1,7 @@
 """Handles low-level API calls."""
 
 import requests
-from tbgclient import TBGException
+from . import TBGException
 
 silent = False
 
@@ -30,7 +30,7 @@ def login(session, user, password):
 
 
 def get_user(session, uid):
-    req = session.get(f"https://tbgforums.com/forums/profiles.php?id={id}")
+    req = session.get(f"https://tbgforums.com/forums/profile.php?id={uid}")
     if req.status_code > 400 and not silent:
         raise TBGException.RequestException(f"Got {req.status_code} at GET")
     return session, req

@@ -1,15 +1,39 @@
 """An implementation of users other than yourself."""
-# TODO: Someone else can add the parts that makes these. (in TBGSession.py, and probably in parsers/html.py and parsers/lxml.py)
 
 
 class User:
-    uID = None
-    username = ""
-    title = None
-    location = None
-    website = None
-    signature = ""
-    realname = None
+    """An object that defines a user other than yourself.
+
+    Parameters
+    ----------
+    uID: int
+        The user ID number.
+    username: str, tbgclient.User
+        The user username.
+    title: str
+        The type of user (New TBGer, TBG Team, etc.)
+    location: str
+        The location of user.
+    website: str
+        The website of user.
+    signature: str
+        The signature of user.
+    realname: str
+        The real name of user.
+    postcount: int
+        Amount of posts the user has posted.
+    social: dict
+        Social info of the user.
+    """
+    uID: int
+    username: str
+    title: str = None
+    location: str = None
+    website: str = None
+    signature: str
+    realname: str = None
+    postcount: int
+    social: dict = {}
 
     def __init__(self, **data):
         self.__dict__.update(data)
@@ -18,4 +42,4 @@ class User:
         return self.username
 
     def __repr__(self):
-        return f"User(username={self.username},uID={self.uID})"
+        return f"User(username={repr(self.username)},uID={repr(self.uID)})"

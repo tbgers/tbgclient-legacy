@@ -1,9 +1,9 @@
 """An implementation of posts."""
-from tbgclient import parsers, api
-from tbgclient.Flags import Flags
-from tbgclient.User import User
+from . import parsers, api
+from .Flags import Flags
+from .User import User
+
 import re
-import requests
 
 
 class Post:
@@ -22,22 +22,22 @@ class Post:
     uID: int
         The poster's user ID number.
     user: str, tbgclient.User
-        The poster's username, or
+        The poster of the post.
     text: str
         The contents of the post.
     time: str
         The time when this post is posted.
     """
     rawHTML = ""
-    pID = None
-    tID = None
-    fID = None
-    uID = None
+    pID: int = None
+    tID: int = None
+    fID: int = None
+    uID: int = None
     user = None
-    text = None
-    time = None
-    flags = Flags.NONE
-    session = requests.Session()
+    text: str = None
+    time: str = None
+    flags: Flags = Flags.NONE
+    session = None
 
     def __init__(self, **data):
         self.__dict__.update(data)
@@ -50,19 +50,17 @@ class Post:
         return self.text
 
     def __repr__(self):
-        return f"Post(user={repr(self.user)},time={repr(self.time)})"
+        return f"Post(user={repr(self.user)},time={repr(self.time)},text={repr(self.text)})"
 
-    def update(self, session):
+    def update(self):
         if Flags.NO_INIT in self.flags:
             return
-        match = re.match(r'<a href="profile\.php\?id=(\d+)">', self.user)
-        print(match, self.user)
+        match = re.match(r'<a href=["\']profile\.php\?id=(\d+)["\']>', self.user)
         if match:
             self.uID = int(match.group(1))
-            self.session, req = api.get_user(session.session, self.uID)
-            print(req.text)
+            self.session, req = api.get_user(self.session.session, self.uID)
             if Flags.RAW_DATA not in self.flags:
-                self.user = User(**parsers.default.get_user(req.text), flags=self.flags)
+                self.user = User(uID=self.uID, **parsers.default.get_user(req.text), flags=self.flags)
             else:
                 self.user = parsers.default.get_user(req.text)
 

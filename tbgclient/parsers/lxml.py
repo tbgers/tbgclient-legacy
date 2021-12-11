@@ -22,7 +22,8 @@ def get_post(document, id):
         post = document.find(f".//div[@id='p{id}']")
         if post is not None:
             user = etree.tostring(post.find(".//dl").find(".//dt")[0]).decode()[8:-9]
-            text = etree.tostring(post.find(".//div[@class='postmsg']")[0]).decode()
+            text = etree.tostring(post.find(".//div[@class='postmsg']")).decode()
+            text = re.search(r">(.*)</d",text,re.DOTALL).group(1).strip()
             time = post.find(".//a[@href]").text.split(" ")
             time[1] = datetime.datetime.strptime(time[1], "\u2009%H:%M:%S").time()
             if time[0] == "Today":
@@ -59,31 +60,45 @@ def get_elements_by_tag_name(document, tag):
 
 
 def get_user(document):
-    a = etree.HTML(document).findall(".//fieldset")
-    if a.findall(".//div[@class=blockmenu]"): raise NotImplementedError
+    a = etree.HTML(document)
+    if a.findall('.//div[@class="blockmenu"]'): raise NotImplementedError
+    a = a.findall(".//fieldset")
     a = [x.find(".//dl") for x in a]
     k = [x[::2] for x in a]
     v = [x[1::2] for x in a]
     a = [{p.text: q for p, q in zip(x, y)} for x, y in zip(k, v)]
     a = {k: v for x in a for k, v in x.items()}
-    
-    r = {
-        "username": a["Username"].text,
-        "title": a["Title"].text,
-        "location": a["Location"].text,
-        "website": a["Website"][0][0].get("href"),
-        "signature": "".join(etree.tostring(x).decode() for x in a["Signature"][0]),
-        "realname": a["Real name"].text,
-        "social": {
-            "Jabber": a["Jabber"].text,
-            "ICQ": a["ICQ"].text,
-            "MSN Messenger": a["MSN Messenger"].text,
-            "AOL IM": a["AOL IM"].text,
-            "Yahoo! Messenger": a["Yahoo! Messenger"].text
-        },
-        "postcount": int(a["Posts"].text[:-3].replace(",", "")),
-        "registered": datetime.datetime.strptime(a["Registered"].text, "%Y-%b-%d").date()
-    }
+
+    r = {}
+    s = {}
+    if "Username" in a:
+        r["username"] = a["Username"].text
+    if "Title" in a:
+        r["title"] = a["Title"].text
+    if "Location" in a:
+        r["location"] = a["Location"].text
+    if "Website" in a:
+        r["website"] = a["Website"][0][0].get("href")
+    if "Signature" in a:
+        r["signature"] = "".join(etree.tostring(x).decode() for x in a["Signature"][0])
+    if "Real name" in a:
+        r["realname"] = a["Real name"].text
+    if "Posts" in a:
+        r["postcount"] = int(a["Posts"].text[:-3].replace(",", ""))
+    if "Registered" in a:
+        r["registered"] = datetime.datetime.strptime(a["Registered"].text, "%Y-%b-%d").date()
+
+    if "Jabber" in a:
+        s = a["Jabber"].text
+    if "ICQ" in a:
+        s = a["ICQ"].text
+    if "MSN Messenger" in a:
+        s = a["MSN Messenger"].text
+    if "AOL IM" in a:
+        s = a["AOL IM"].text
+    if "Yahoo! Messenger" in a:
+        s = a["Yahoo! Messenger"].text
+    r["social"] = s
     return r
 
 __all__ = dir(globals())

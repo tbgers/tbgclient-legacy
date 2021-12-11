@@ -68,7 +68,7 @@ class HTMLSearch(HTMLParser):
                     self.result=""
             else: raise ValueError("What is "+self.searchIn)
         if self.found:
-            self.result+=f"<{tag} {' '.join('%s=%s'%(x,repr(attrs[x])) for x in attrs)}>"
+            self.result+=f"<{tag}{''.join(' %s=%s'%(x,repr(attrs[x])) for x in attrs)}>"
             if self.found==tag:
                 self.layers+=1
  
@@ -139,23 +139,36 @@ def get_user(document):
     a = [{p: q for p, q in zip(x, y)} for x, y in zip(k, v)]
     a = {k: v for x in a for k, v in x.items()}
 
-    r = {
-        "username": a["Username"],
-        "title": a["Title"],
-        "location": a["Location"],
-        "website": re.findall(">(.*)<", HTMLSearch(a["Website"]).getElementsByTagName("a")[0].text)[0],
-        "signature": re.findall(">(.*)<", a["Signature"])[0],
-        "realname": a["Real name"],
-        "social": {
-            "Jabber": a["Jabber"],
-            "ICQ": a["ICQ"],
-            "MSN Messenger": a["MSN Messenger"],
-            "AOL IM": a["AOL IM"],
-            "Yahoo! Messenger": a["Yahoo! Messenger"]
-        },
-        "postcount": int(a["Posts"].split(" - ")[0].replace(",", "")),
-        "registered": datetime.datetime.strptime(a["Registered"], "%Y-%b-%d").date()
-    }
+    r = {}
+    s = {}
+    if "Username" in a:
+        r["username"] = a["Username"]
+    if "Title" in a:
+        r["title"] = a["Title"]
+    if "Location" in a:
+        r["location"] = a["Location"]
+    if "Website" in a:
+        r["website"] = re.findall(">(.*)<", HTMLSearch(a["Website"]).getElementsByTagName("a")[0].text)[0]
+    if "Signature" in a:
+        r["signature"] = re.findall(">(.*)<", a["Signature"])[0]
+    if "Real name" in a:
+        r["realname"] = a["Real name"]
+    if "Posts" in a:
+        r["postcount"] = int(a["Posts"].split(" - ")[0].replace(",", ""))
+    if "Registered" in a:
+        r["registered"] = datetime.datetime.strptime(a["Registered"], "%Y-%b-%d").date()
+
+    if "Jabber" in a:
+        s = a["Jabber"]
+    if "ICQ" in a:
+        s = a["ICQ"]
+    if "MSN Messenger" in a:
+        s = a["MSN Messenger"]
+    if "AOL IM" in a:
+        s = a["AOL IM"]
+    if "Yahoo! Messenger" in a:
+        s = a["Yahoo! Messenger"]
+    r["social"] = s
     return r
 
 

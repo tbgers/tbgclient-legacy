@@ -3,12 +3,12 @@
 import re
 import requests
 
-from tbgclient import api
-from tbgclient.Flags import Flags
-from tbgclient.Post import Post
-from tbgclient.TBGException import *
-from tbgclient.User import User
-from tbgclient import parsers
+from . import api
+from .Flags import Flags
+from .Post import Post
+from .TBGException import *
+from .User import User
+from . import parsers
 
 
 def _check_error(req, parser):
@@ -68,8 +68,8 @@ class TBGSession:
         """Gets a post."""
         self.session, req = api.get_post(self.session, pid)
         if Flags.RAW_DATA not in self.flags:
-            result = Post(**parsers.default.get_post(req.text, pid), flags=self.flags)
-            result.update(self)
+            result = Post(**parsers.default.get_post(req.text, pid), flags=self.flags, session=self)
+            result.update()
             return result
         else:
             return parsers.default.get_post(req.text, pid)
@@ -94,7 +94,7 @@ class TBGSession:
         match = re.findall('<p class="conl">(.+)</p>', req.text)
         if len(match) != 0:
             raise CredentialsException(
-                f"Login failed, you have faulty credential information. {tuple(match)}"
+                f"Login failed, you have a faulty credential information. {tuple(match)}"
             )
         return req
 
