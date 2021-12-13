@@ -28,7 +28,7 @@ class Post:
     time: str
         The time when this post is posted.
     """
-    rawHTML = ""
+    rawHTML: str = ""
     pID: int = None
     tID: int = None
     fID: int = None
@@ -50,15 +50,16 @@ class Post:
         return self.text
 
     def __repr__(self):
-        return f"Post(user={repr(self.user)},time={repr(self.time)},text={repr(self.text)})"
+        return f"Post(user={repr(self.user)},pID={repr(self.pID)},text={repr(self.text)},session={repr(self.session)})"
 
-    def update(self):
-        if Flags.NO_INIT in self.flags:
-            return
+    def update(self, full=True):
+        if full:
+            self.session.session, req = api.get_post(self.session.session, self.pID)
+            self.__init__(**parsers.default.get_post(req.text, self.pID))
         match = re.match(r'<a href=["\']profile\.php\?id=(\d+)["\']>', self.user)
         if match:
             self.uID = int(match.group(1))
-            self.session, req = api.get_user(self.session.session, self.uID)
+            self.session.session, req = api.get_user(self.session.session, self.uID)
             if Flags.RAW_DATA not in self.flags:
                 self.user = User(uID=self.uID, **parsers.default.get_user(req.text), flags=self.flags)
             else:

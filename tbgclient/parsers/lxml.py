@@ -3,7 +3,7 @@ import warnings
 from lxml import etree
 
 
-def get_post(document, id):
+def get_post(document, pid=None):
     """Get post data using lxml."""
     # get the post
     document = etree.HTML(document)
@@ -13,13 +13,18 @@ def get_post(document, id):
     if err is not None:
         raw = etree.tostring(err)
     else:
-        # Check the "header"
-        header = document.find(".//ul[@class='crumbs']").findall(".//a[@href]")
-        tid = int(re.search(r"(\d+)", list(header[-1].values())[0]).group(1))
-        fid = int(re.search(r"(\d+)", list(header[-2].values())[0]).group(1))
+        if pid is not None:
+            # Check the "header"
+            header = document.find(".//ul[@class='crumbs']").findall(".//a[@href]")
+            tid = int(re.search(r"(\d+)", list(header[-1].values())[0]).group(1))
+            fid = int(re.search(r"(\d+)", list(header[-2].values())[0]).group(1))
 
-        # Check the post
-        post = document.find(f".//div[@id='p{id}']")
+            # Check the post
+            post = document.find(f".//div[@id='p{pid}']")
+        else:
+            post = document
+            pid = int(document[0][0].get("id")[1:])
+
         if post is not None:
             user = etree.tostring(post.find(".//dl").find(".//dt")[0]).decode()[8:-9]
             text = etree.tostring(post.find(".//div[@class='postmsg']")).decode()
@@ -37,7 +42,7 @@ def get_post(document, id):
             raw = etree.tostring(post).decode()
         else:
             warnings.warn("Cannot find post ID in document", RuntimeWarning)
-    return {"rawHTML": raw, "pid": id, "tid": tid, "fid": fid, "user": user, "text": text, "time": time}
+    return {"rawHTML": raw, "pID": pid, "tID": tid, "fID": fid, "user": user, "text": text, "time": time}
 
 
 def get_element_by_id(document, id):
@@ -100,5 +105,30 @@ def get_user(document):
         s = a["Yahoo! Messenger"].text
     r["social"] = s
     return r
+
+
+def get_page(document):
+    """Get page data using lxml."""
+    # get the post
+    document = etree.HTML(document)
+    raw, tid, fid, pages, posts = (None,)*5  # le init
+
+    raw = document.find(".//div[@id='brdmain']")
+    err = document.find(".//div[@id='msg']")
+    if err is None:
+        # Check the "header"
+        header = document.find(".//ul[@class='crumbs']").findall(".//a[@href]")
+        tid = int(re.search(r"(\d+)", list(header[-1].values())[0]).group(1))
+        name = header[-1][0].text
+        fid = int(re.search(r"(\d+)", list(header[-2].values())[0]).group(1))
+
+        # Check the page count
+        header = document.find(".//p[@class='pagelink conl']")
+        pages = sorted(int(x.text) for x in header if re.match(r"\d+", x.text))[-1]
+
+        # Check the post
+        posts = [etree.tostring(x) for x in raw if re.match(r"p\d+", x.get("id") if x.get("id") is not None else "")]
+    return {"rawHTML": etree.tostring(raw), "tID": tid, "fID": fid, "pages": pages, "posts": posts, "title": name}
+
 
 __all__ = dir(globals())

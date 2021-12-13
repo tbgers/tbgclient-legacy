@@ -16,6 +16,7 @@ class HTMLSearch(HTMLParser):
     results=[]
     multiple=False
     tag=""
+    disable=False
  
     def __init__(self, text: str):
         self.text=text
@@ -53,6 +54,14 @@ class HTMLSearch(HTMLParser):
         self.multiple=True
         self.feed(self.text)
         return [HTMLSearch(x) for x in self.results]
+
+    def getChildNodes(self):
+        self.resetSettings()
+        self.searchIn="child"
+        self.multiple=True
+        self.disable=True
+        self.feed(self.text)
+        return [HTMLSearch(x) for x in self.results]
  
     def handle_starttag(self, tag, attrs):
         attrs=dict(attrs)
@@ -66,6 +75,11 @@ class HTMLSearch(HTMLParser):
                 if self.search == tag:
                     self.found=tag
                     self.result=""
+            elif self.searchIn == "child":
+                if self.disable: self.disable=False
+                else:
+                    self.found = tag
+                    self.result = ""
             else: raise ValueError("What is "+self.searchIn)
         if self.found:
             self.result+=f"<{tag}{''.join(' %s=%s'%(x,repr(attrs[x])) for x in attrs)}>"
@@ -84,17 +98,21 @@ class HTMLSearch(HTMLParser):
         if self.found:self.result+=data
 
 
-def get_post(document, id):
+def get_post(document, pid=None):
     """Finds post using HTMLParser"""
     document = HTMLSearch(document)
-    if document.getElementByID("msg").text: 
-        post = document.getElementByID("msg")
-        return {"rawHTML": post.text, "pid": id, "tid": None, "fid": None, "user": None, "text": None, "time": None}
-    topic = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-1].text
-    topic = int(re.sub(r"""<a href=['"]viewtopic\.php\?id=(\d*)['"]>(?:.*)</a>""",r"\1",topic))
-    forum = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-2].text
-    forum = int(re.sub(r"""<a href=['"]viewforum\.php\?id=(\d*)['"]>(?:.*)</a>""",r"\1",forum))
-    post = document.getElementByID(f"p{id}")
+    if pid is not None:
+        if document.getElementByID("msg").text:
+            post = document.getElementByID("msg")
+            return {"rawHTML": post.text, "pid": pid, "tid": None, "fid": None, "user": None, "text": None, "time": None}
+        topic = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-1].text
+        topic = int(re.sub(r"""<a href=['"]viewtopic\.php\?id=(\d*)['"]>(?:.*)</a>""",r"\1",topic))
+        forum = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-2].text
+        forum = int(re.sub(r"""<a href=['"]viewforum\.php\?id=(\d*)['"]>(?:.*)</a>""",r"\1",forum))
+        post = document.getElementByID(f"p{pid}")
+    else:
+        post = document
+        pid = int(re.search(r"p(\d+)", document.text).group(1))
     text, time = (None, None)
     user = post.getElementsByTagName("dl")
     if user: 
@@ -113,7 +131,7 @@ def get_post(document, id):
     else: 
         warnings.warn("Cannot find post ID in document",RuntimeWarning)
         user=None
-    return {"rawHTML": post.text, "pID": id, "tID": topic, "fID": forum, "user": user, "text": text, "time": time}
+    return {"rawHTML": post.text, "pID": pid, "tID": topic, "fID": forum, "user": user, "text": text, "time": time}
 
 
 def get_element_by_id(document, id):
@@ -170,6 +188,25 @@ def get_user(document):
         s = a["Yahoo! Messenger"]
     r["social"] = s
     return r
+
+
+def get_page(document):
+    """Get page data using HTMLParser."""
+    document = HTMLSearch(document)
+    raw = document.getElementByID("brdmain")
+    topic, name, forum, pages, posts = (None,) * 5  # le init
+    if document.getElementByID("msg").text == "":
+        topic = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-1].text
+        topic, name = re.findall(r"""<a href=['"]viewtopic\.php\?id=(\d*)['"]>(.*)</a>""",topic)[0]
+        topic = int(topic)
+        name = re.search(r">(.+)<", name).group(1)
+        forum = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-2].text
+        forum = int(re.sub(r"""<a href=['"]viewforum\.php\?id=(\d*)['"]>.*</a>""",r"\1",forum))
+        header = document.getElementsByClass(f"pagelink conl")[0].getChildNodes()
+        pages = [re.findall(r">(.+)<", x.text)[0] for x in header]
+        pages = sorted(int(x) for x in pages if re.match(r"\d+", x))[-1]
+        posts = [x.text for x in raw.getChildNodes()]
+    return {"rawHTML": raw.text, "tID": topic, "fID": forum, "pages": pages, "posts": posts, "title": name}
 
 
 __all__ = dir(globals())

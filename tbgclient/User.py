@@ -32,7 +32,7 @@ class User:
     website: str = None
     signature: str
     realname: str = None
-    postcount: int
+    postCount: int
     social: dict = {}
 
     def __init__(self, **data):
