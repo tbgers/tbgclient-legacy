@@ -24,6 +24,8 @@ class User:
         Amount of posts the user has posted.
     social: dict
         Social info of the user.
+    flags: tbgclient.Flags
+        Flags for the user. See tbgclient.Flags for more information.
     """
     uID: int
     username: str

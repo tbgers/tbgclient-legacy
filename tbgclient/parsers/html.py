@@ -1,5 +1,6 @@
 import datetime, re
 from html.parser import HTMLParser
+import xml.etree.ElementTree as etree
 import warnings
 
 # Too many violations: not gonna attempt to comply PEP 8
@@ -149,6 +150,7 @@ def get_elements_by_tag_name(document, tag):
 def get_user(document):
     a = HTMLSearch(document)
     if a.getElementsByClass("blockmenu"): 
+        # TODO: Parse current user's page
         raise NotImplementedError
     a = a.getElementsByTagName("fieldset")
     a = [x.getElementsByTagName("dl")[0].text for x in a]
@@ -208,5 +210,35 @@ def get_page(document):
         posts = [x.text for x in raw.getChildNodes()]
     return {"rawHTML": raw.text, "tID": topic, "fID": forum, "pages": pages, "posts": posts, "title": name}
 
+
+def get_message(xml):
+    """Get page data using xml.etree.ElementTree."""
+    xml = etree.fromstring(xml)
+
+    info = xml.find("infos")
+    userlist = xml.find("users")
+    msglist = xml.find("messages")
+
+    if info is not None:
+        info = {x.get("type"): x.text for x in info}
+
+    users = {}
+    if userlist is not None:
+        for x in userlist:
+            channel = x.get("channelID")
+            if channel not in users: users[channel] = []
+            users[channel].append({"uID": x.get("userID"), "username": x.text})
+
+    messages = {}
+    if msglist is not None:
+        messages = [{
+                        "pID": x.get("id"), 
+                        "user": {"uID": x.get("userID"), "username": x[0].text.strip()},
+                        "text": x[1].text.strip(),
+                        "rawHTML": etree.tostring(x).decode(),
+                        "time": datetime.datetime.strptime(x.get("dateTime"), "%a, %d %b %Y %H:%M:%S %z")
+                    }
+                    for x in msglist]
+    return {"messages": messages, "info": info, "users": users}
 
 __all__ = dir(globals())

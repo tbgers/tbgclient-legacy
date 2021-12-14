@@ -32,6 +32,8 @@ class Topic:
         The title of topic.
     pages: int
         The page count of topic.
+    flags: tbgclient.Flags
+        Flags for the topic. See tbgclient.Flags for more information.
     """
     tID: int
     fID: int

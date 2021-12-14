@@ -9,20 +9,24 @@ from .Post import Post
 from .TBGException import *
 from .Topic import Topic
 from .User import User
+from .ChatConnection import ChatConnection
 from . import parsers
 
 
 class TBGSession:
     """An object that defines a TBG session.
 
-    This class provides a client session while also functions as a wrapper of tbgclient.api.
+    This class provides a client session while also functions as a wrapper 
+    of tbgclient.api.
 
     Parameters
     ----------
     user: str
-        Username of the TBG account. If left blank, the Flags.NO_LOGIN flag will be set.
+        Username of the TBG account. If left blank, the Flags.NO_LOGIN 
+        flag will be set.
     password: str
-        Password of the TBG account. If left blank, the Flags.NO_LOGIN flag will be set.
+        Password of the TBG account. If left blank, the Flags.NO_LOGIN 
+        flag will be set.
     flags: tbgclient.Flags
         Flags for the session. See tbgclient.Flags for more information.
 
@@ -83,13 +87,21 @@ class TBGSession:
         else:
             return parsers.default.get_user(req.text)
 
+    def create_chat_connection(self, channel: int, **kwargs):
+        """Creates a chat connection.
+
+        This is identical to ChatConnection(**kwargs, session=self).connect(channel).
+        """
+        connect = ChatConnection(**kwargs, session=self)
+        return connect.connect(channel)
+
     def post_reply(self, post: str, tid: int):
         """Posts a post.
 
         This is identical to self.get_topic(tid).post_reply(post).
         """
         topic = self.get_topic(tid)
-        return topic.post_reply
+        return topic.post_reply(post)
 
     def login(self):
         """Logs into the TBGs."""
@@ -108,7 +120,7 @@ class TBGSession:
             # user id is not defined
             req = self.session.get("https://tbgforums.com/forums/index.php")
             self.uID = parsers.default.get_element_by_id(req.text, "navprofile")
-            self.uID = int(re.findall(r'href="profile\.php\?id=(.*)"')[0])
+            self.uID = int(re.findall(r'profile\.php\?id=(\d*)', self.uID)[0])
         self.get_user(self.uID)
 
 

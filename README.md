@@ -23,4 +23,4 @@ user = session.get_user(2)
 session.get_topic(5716).post_reply("Hello, " + user.username) 
 ```
 
-Documentation will come later. For now, above examples will suffice.
+Documentation will come later. For now, above examples (and docstrings) will suffice.

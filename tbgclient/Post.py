@@ -2,8 +2,15 @@
 from . import parsers, api
 from .Flags import Flags
 from .User import User
+from enum import Enum, auto
 
 import re
+
+
+class PostType(Enum):
+    """Defines types of posts."""
+    NORMAL = auto()
+    CHAT = auto()
 
 
 class Post:
@@ -27,6 +34,10 @@ class Post:
         The contents of the post.
     time: str
         The time when this post is posted.
+    postType: tbgclient.Post.PostType
+        The post type of this post.
+    flags: tbgclient.Flags
+        Flags for this post. See tbgclient.Flags for more information.
     """
     rawHTML: str = ""
     pID: int = None
@@ -37,6 +48,7 @@ class Post:
     text: str = None
     time: str = None
     flags: Flags = Flags.NONE
+    postType: PostType = PostType.NORMAL
     session = None
 
     def __init__(self, **data):
@@ -56,12 +68,15 @@ class Post:
         if full:
             self.session.session, req = api.get_post(self.session.session, self.pID)
             self.__init__(**parsers.default.get_post(req.text, self.pID))
-        match = re.match(r'<a href=["\']profile\.php\?id=(\d+)["\']>', self.user)
-        if match:
-            self.uID = int(match.group(1))
-            self.session.session, req = api.get_user(self.session.session, self.uID)
-            if Flags.RAW_DATA not in self.flags:
-                self.user = User(uID=self.uID, **parsers.default.get_user(req.text), flags=self.flags)
-            else:
-                self.user = parsers.default.get_user(req.text)
+        if type(self.user) is dict:
+            self.user = User(**self.user, session=self.session, flags=self.flags)
+        else:
+            match = re.match(r'<a href=["\']profile\.php\?id=(\d+)["\']>', self.user)
+            if match:
+                self.uID = int(match.group(1))
+                self.session.session, req = api.get_user(self.session.session, self.uID)
+                if Flags.RAW_DATA not in self.flags:
+                    self.user = User(uID=self.uID, **parsers.default.get_user(req.text), flags=self.flags)
+                else:
+                    self.user = parsers.default.get_user(req.text)
 

@@ -131,4 +131,37 @@ def get_page(document):
     return {"rawHTML": etree.tostring(raw), "tID": tid, "fID": fid, "pages": pages, "posts": posts, "title": name}
 
 
+def get_message(xml):
+    """Get page data using lxml."""
+    # it's literally copy-pasted from html.py
+    # well the comment ruined it but you know what I mean
+    xml = etree.XML(xml.encode())
+
+    info = xml.find("infos")
+    userlist = xml.find("users")
+    msglist = xml.find("messages")
+
+    if info is not None:
+        info = {x.get("type"): x.text for x in info}
+
+    users = {}
+    if userlist is not None:
+        for x in userlist:
+            channel = x.get("channelID")
+            if channel not in users: users[channel] = []
+            users[channel].append({"uID": x.get("userID"), "username": x.text})
+
+    messages = {}
+    if msglist is not None:
+        messages = [{
+                        "pID": x.get("id"), 
+                        "user": {"uID": x.get("userID"), "username": x[0].text.strip()},
+                        "text": x[1].text.strip(),
+                        "rawHTML": etree.tostring(x).decode(),
+                        "time": datetime.datetime.strptime(x.get("dateTime"), "%a, %d %b %Y %H:%M:%S %z")
+                    }
+                    for x in msglist]
+    return {"messages": messages, "info": info, "users": users}
+
+
 __all__ = dir(globals())
