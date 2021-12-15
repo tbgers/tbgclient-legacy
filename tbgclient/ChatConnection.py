@@ -2,6 +2,7 @@
 import threading
 import warnings
 import time
+import asyncio
 
 from . import api
 from .Post import Post, PostType
@@ -39,24 +40,41 @@ class ChatConnection:
     channelName: str = ""
     flags: Flags = Flags.NONE
     loop: threading.Thread
-    threads: [threading.Thread] = []
+    tasks = None
+    isAsync: bool = False
     users: dict = None
+    connected: bool = False
+
     def __init__(self,  **data):
         self.__dict__.update(data)
-        self.loop = threading.Thread(name='post', target=self.main_loop, args=tuple())
+        self.loop = threading.Thread(name='post', target=self.main_loop, args=tuple(), daemon=True)
         
     def connect(self, channel):
         """Connects to a channel."""
         self.channel = channel
         if not self.loop.is_alive(): self.loop.start()
-        # self.on_login(self.session.to_user())
+        self.on_login(self.session)
         return self
 
     def main_loop(self):
         """The main loop."""
+        async def do_nothing():
+            """Does nothing."""
+            pass
+        
+        self.connected = True
+        self.isAsync = asyncio.iscoroutinefunction(self.on_message)
+        if self.isAsync:
+            self.tasks = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.tasks)
+        else:
+            self.tasks = []
+
         try:
             first = True
             while True:
+                if not self.connected:
+                    return
                 self.session.session, req = api.get_message(self.session.session, self.channel, 
                                                             self.lastID, ["channelName"])
                 xml = parsers.default.get_message(req.text)
@@ -71,20 +89,27 @@ class ChatConnection:
                     self.lastID = xml["messages"][-1].pID
                 
                 if not first:
-                    # Scrub finished threads
-                    finished = []
-                    for i, x in enumerate(self.threads):
-                        if not x.is_alive():
-                            finished.append(i)
-                    self.threads = [x for i, x in enumerate(self.threads) if i not in finished]
+                    if self.isAsync:
+                        # Make and execute new tasks
+                        for x in xml["messages"]:
+                            self.tasks.create_task(self.on_message(x))
+                        self.tasks.run_until_complete(do_nothing())
+                    else:
+                        # Scrub finished threads
+                        finished = []
+                        for i, x in enumerate(self.tasks):
+                            if not x.is_alive():
+                                finished.append(i)
+                        self.tasks = [x for i, x in enumerate(self.tasks) if i not in finished]
 
-                    # Make and execute new threads
-                    for x in xml["messages"]:
-                        self.threads.append(threading.Thread(name=f"p{x.pID}", target=self.on_message, args=(x,)))
-                    
-                    for i, x in enumerate(self.threads):
-                        if not x.is_alive():
-                            self.threads[i].start()
+                        # Make and execute new threads
+                        for x in xml["messages"]:
+                            self.tasks.append(threading.Thread(name=f"p{x.pID}", target=self.on_message,
+                                                               sargs=(x,), daemon=True))
+                        
+                        for i, x in enumerate(self.tasks):
+                            if not x.is_alive():
+                                self.tasks[i].start()
                 first = False
 
                 time.sleep(self.refreshRate)
@@ -115,23 +140,27 @@ class ChatConnection:
                            for x in xml["messages"]]
         if len(xml["messages"]) != 0: 
             self.lastID = xml["messages"][-1].pID
+        else: 
+            self.lastID += 1
         return req
+
+    def disconnect(self):
+        self.connected = False
 
     # These are meant to be user-defined functions.
     def on_error(self, e: Exception):
         """Called when self.main_loop() throws an error."""
         pass
 
-    def on_message(self, message):
-        """Called every message read."""
+    async def on_message(self, message):
+        """Called every message read.
+
+        Overrides isAsync if this function is asynchronous."""
         pass
 
     def on_login(self, user):
-        """Called every login.
-    
-        (Due to a technical reason, this isn't called every login.)"""
+        """Called every login."""
         pass
-
     
 
     
