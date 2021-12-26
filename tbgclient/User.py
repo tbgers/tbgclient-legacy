@@ -29,6 +29,7 @@ class User:
     """
     uID: int
     username: str
+    password: str
     title: str = None
     location: str = None
     website: str = None
@@ -36,6 +37,7 @@ class User:
     realname: str = None
     postCount: int
     social: dict = {}
+    session = None
 
     def __init__(self, **data):
         self.__dict__.update(data)
@@ -45,3 +47,14 @@ class User:
 
     def __repr__(self):
         return f"User(username={repr(self.username)},uID={repr(self.uID)})"
+
+    def update(self):
+        if self.session is not None:
+            self.password = self.session.password
+
+    def to_session(self):
+        """Casts User to TBGSession."""
+        if self.session is not None:
+            return self.session
+        else:
+            return

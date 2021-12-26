@@ -35,7 +35,12 @@ class TBGSession:
     session: request.Session()
         The client session.
     uID: int
-        The user ID of the session.
+        The user ID of the session. This will be updated if update() is
+        called.
+
+    Methods
+    -------
+
     """
     session = requests.Session()
     user = ""
@@ -53,6 +58,8 @@ class TBGSession:
         self.password = password
         if Flags.NO_LOGIN not in self.flags:
             req = self.login()
+        if Flags.MULTI_USER in self.flags:
+            self.session = api.SessionMultiple()
 
     def __repr__(self):
         return f"TBGSession(user={repr(self.user)},password={repr(self.password)},flags={repr(self.flags)})"
@@ -67,6 +74,10 @@ class TBGSession:
             return result
         else:
             return parsers.default.get_post(req.text, pid)
+            
+     def delete_post(self, pid: int):
+        """Deletes a post."""
+        self.session, req = api.delete_post(self.session, pid)
 
     def get_topic(self, tid: int):
         """Gets a topic."""

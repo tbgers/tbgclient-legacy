@@ -15,7 +15,6 @@ def _check_error(req, parser):
     error = re.findall(r'<ul class="error-list">(.+?)</ul>', error[0], re.DOTALL)
     error = parser.get_elements_by_tag_name(error[0], "strong")
     error = [re.sub(r"</?[^>]+(>|$)", "", x) for x in error]
-    print(error)
     return error
 
 
@@ -76,15 +75,25 @@ class Topic:
         """Get posts on a single page."""
         if self.session is None:
             raise RequestException("Session is missing")
+        if page <= 0:
+            raise IndexError("Page index out of range")
+        if page > self.pages:
+            raise IndexError("Page index out of range")
         self.session.session, req = api.get_topic(self.session.session, self.tID, page)
         page = parsers.default.get_page(req.text)["posts"]
         posts = [parsers.default.get_post(x) for x in page]
         result = []
-        if Flags.RAW_DATA not in self.flags:
-            for x in posts:
-                post = Post(**x)
-                post.tID = self.tID
-                post.fID = self.fID
+        for x in posts:
+            if Flags.RAW_DATA not in self.flags:
+                post = Post(**x, session=self.session)
+                post.tID=self.tID
+                post.fID=self.fID
+                post.update()
+                result.append(post)
+            else: 
+                post = x
+                post["tID"]=self.tID
+                post["fID"]=self.fID
                 result.append(post)
         return result
 

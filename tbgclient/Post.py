@@ -2,6 +2,7 @@
 from . import parsers, api
 from .Flags import Flags
 from .User import User
+from .TBGException import *
 from enum import Enum, auto
 
 import re
@@ -65,6 +66,8 @@ class Post:
         return f"Post(user={repr(self.user)},pID={repr(self.pID)},text={repr(self.text)},session={repr(self.session)})"
 
     def update(self, full=True):
+        if self.session is None:
+            raise RequestException("Session is missing")
         if full:
             self.session.session, req = api.get_post(self.session.session, self.pID)
             self.__init__(**parsers.default.get_post(req.text, self.pID))

@@ -1,14 +1,18 @@
 """A TBG API wrapper for Python."""
 
-__version__ = "0.1.0"
-import glob, importlib, sys
+__version__ = "0.3.0-beta"
 
-notAllowed = ["__init__"]
-for i in glob.glob("tbgclient/*.py"):
-    if "__init__.py" in i:
-        continue
-    mdl = importlib.import_module(f"tbgclient.{i[10:-3]}")
-    imp_all = False
-    if "_import_all" in dir(mdl): imp_all = mdl._import_all
-    if i[10:-3] in dir(mdl) and not imp_all: mdl = getattr(mdl, i[10:-3])
-    globals()[i[10:-3]] = mdl
+
+# shrug
+from .TBGSession import TBGSession
+from .Post import Post
+from .User import User
+from .Flags import Flags
+from .TBGException import TBGException
+from .TBGSession import TBGSession
+
+"""
+Future modules.
+from .Search import Search
+"""
+

@@ -8,12 +8,15 @@ class Flags(IntFlag):
 
     Flags
     -----
-    NONE    : None.
-    NO_LOGIN: Prevents logins on initialization.
-    NO_INIT : Prevents other requests on initialization.
-    RAW_DATA: Output raw data instead of tbgclient objects.
+    NONE        : None.
+    NO_LOGIN    : Prevents logins on initialization.
+    NO_INIT     : Prevents other requests on initialization.
+    RAW_DATA    : Output raw data instead of tbgclient objects.
+    MULTI_USER  : Use api.SessionM instead of requests.Session.
+                  Useful if you have multiple TBGSession-s.
     """
     NONE = 0
     NO_LOGIN = 1 
     NO_INIT = 2
     RAW_DATA = 4
+    MULTI_USER = 8

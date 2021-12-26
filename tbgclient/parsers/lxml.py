@@ -58,7 +58,6 @@ def get_elements_by_class(document, klas):
 
 
 def get_elements_by_tag_name(document, tag):
-    print(document, tag)
     document = etree.HTML(document).findall(".//%s" % tag)
     if document is not None:
         return [etree.tostring(x).decode() for x in document]
