@@ -19,7 +19,7 @@ def _check_error(req, parser):
 
 
 class Topic:
-    """An object that defines a post.
+    """An object that defines a topic or any collection of posts.
 
     Variables
     ---------
@@ -40,21 +40,23 @@ class Topic:
     pages: int
     flags: Flags = Flags.NONE
     _pageSize: int = 0
-    session = None
+    _pageCache: dict
     posts: list
 
     def __init__(self, **data):
         self.__dict__.update(data)
         self._pageSize = len(self.posts)
+        self._pageCache = {}
         del self.posts
 
     def __repr__(self):
         return f"Topic(tID={repr(self.tID)},title={repr(self.title)}," +\
                f"pages={repr(self.pages)},session={repr(self.session)})"
 
-    def update(self):
-        self.session.session, req = api.get_topic(self.session.session, self.tID)
-        self.__init__(**parsers.default.get_page(req.text))
+    def update(self, full=True):
+        if full:
+            self.session.session, req = api.get_topic(self.session.session, self.tID)
+            self.__init__(**parsers.default.get_page(req.text))
 
     def post_reply(self, post):
         """Posts a post."""
@@ -79,9 +81,14 @@ class Topic:
             raise IndexError("Page index out of range")
         if page > self.pages:
             raise IndexError("Page index out of range")
-        self.session.session, req = api.get_topic(self.session.session, self.tID, page)
-        page = parsers.default.get_page(req.text)["posts"]
-        posts = [parsers.default.get_post(x) for x in page]
+        if page in self._pageCache:
+            pageData = self._pageCache[page]
+        else:
+            self.session.session, req = api.get_topic(self.session.session, self.tID, page)
+            pageData = parsers.default.get_page(req.text)["posts"]
+            self._pageCache[page] = pageData
+        
+        posts = [parsers.default.get_post(x) for x in pageData]
         result = []
         for x in posts:
             if Flags.RAW_DATA not in self.flags:
@@ -108,3 +115,7 @@ class Topic:
         if post >= len(posts):
             raise IndexError("Post index out of range")
         return posts[post]
+        
+    def __getitem__(self, pNum):
+        return self.get_post(pNum)
+

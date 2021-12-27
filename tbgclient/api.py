@@ -10,7 +10,10 @@ class SessionMultiple(requests.Session):
     """An extension of requests.Session, allowing multiple sessions to be
     used at once without interfering with each other.
     """
-    _cookies = requests.cookies.RequestsCookieJar()
+    def __init__(self):
+        self._cookies = requests.cookies.RequestsCookieJar()
+        requests.Session.__init__(self)
+        
     def request(self, method, url,
             params=None, data=None, headers=None, cookies=None, files=None,
             auth=None, timeout=None, allow_redirects=True, proxies=None,
@@ -80,7 +83,7 @@ class SessionMultiple(requests.Session):
         send_kwargs.update(settings)
         resp = self.send(prep, **send_kwargs)
         self._cookies.update(resp.cookies)
-        print(self._cookies)
+        # print(self._cookies)
         return resp
 
 
@@ -99,7 +102,7 @@ def get_post(session, pid, **kwargs):
 
 
 def delete_post(session, pid, **kwargs):
-    req = session.post(f"https://tbgforums.com/forums/delete.php?id={pid}", **kwargs)
+    req = session.post(f"https://tbgforums.com/forums/delete.php?id={pid}", data={"delete": "Delete"}, **kwargs)
     if req.status_code > 400 and not silent:
         raise TBGException.RequestException(f"Got {req.status_code} at POST")
     return session, req

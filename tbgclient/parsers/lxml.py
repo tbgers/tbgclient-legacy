@@ -117,16 +117,28 @@ def get_page(document):
     if err is None:
         # Check the "header"
         header = document.find(".//ul[@class='crumbs']").findall(".//a[@href]")
-        tid = int(re.search(r"(\d+)", list(header[-1].values())[0]).group(1))
-        name = header[-1][0].text
-        fid = int(re.search(r"(\d+)", list(header[-2].values())[0]).group(1))
+        match = re.search(r"(\d+)", list(header[-1].values())[0])
+        if match:
+            tid = int(match.group(1))
+        match = re.search(r"(\d+)", list(header[-1].values())[0])
+        if match:
+            fid = int(match.group(1))
+        if header[-1].text is None:
+            name = header[-1][0].text
+        else: 
+            name = header[-1].text
 
         # Check the page count
         header = document.find(".//p[@class='pagelink conl']")
-        pages = sorted(int(x.text) for x in header if re.match(r"\d+", x.text))[-1]
+        if header:
+            pages = sorted(int(x.text) for x in header if re.match(r"\d+", x.text))[-1]
 
         # Check the post
-        posts = [etree.tostring(x) for x in raw if re.match(r"p\d+", x.get("id") if x.get("id") is not None else "")]
+        if "id" in raw[1]: # 
+            posts = [etree.tostring(x) for x in raw if re.match(r"p\d+", x.get("id") if x.get("id") is not None else "")]
+        else:
+            posts = [etree.tostring(x) for x in raw if "link" not in x.get("class")]
+        
     return {"rawHTML": etree.tostring(raw), "tID": tid, "fID": fid, "pages": pages, "posts": posts, "title": name}
 
 

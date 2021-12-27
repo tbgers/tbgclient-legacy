@@ -37,12 +37,7 @@ class TBGSession:
     uID: int
         The user ID of the session. This will be updated if update() is
         called.
-
-    Methods
-    -------
-
     """
-    session = requests.Session()
     user = ""
     password = ""
     uID = None
@@ -56,10 +51,12 @@ class TBGSession:
             self.flags |= Flags.NO_LOGIN
         self.user = user
         self.password = password
-        if Flags.NO_LOGIN not in self.flags:
-            req = self.login()
         if Flags.MULTI_USER in self.flags:
             self.session = api.SessionMultiple()
+        else:
+            self.session = requests.Session()
+        if Flags.NO_LOGIN not in self.flags:
+            req = self.login()
 
     def __repr__(self):
         return f"TBGSession(user={repr(self.user)},password={repr(self.password)},flags={repr(self.flags)})"
@@ -75,9 +72,10 @@ class TBGSession:
         else:
             return parsers.default.get_post(req.text, pid)
             
-     def delete_post(self, pid: int):
+    def delete_post(self, pid: int):
         """Deletes a post."""
         self.session, req = api.delete_post(self.session, pid)
+        return req
 
     def get_topic(self, tid: int):
         """Gets a topic."""
@@ -85,7 +83,7 @@ class TBGSession:
         if Flags.RAW_DATA not in self.flags:
             result = Topic(**parsers.default.get_page(req.text), flags=self.flags, session=self)
             if Flags.NO_INIT not in self.flags:
-                result.update()
+                result.update(full=False)
             return result
         else:
             return parsers.default.get_post(req.text, tid)

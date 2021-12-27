@@ -69,7 +69,10 @@ class HTMLSearch(HTMLParser):
         if not self.found:
             if self.searchIn == "attrs":
                 if self.tag in attrs:
-                    if attrs[self.tag] == self.search:
+                    # HACK: using self.tag to classify search mode 
+                    match = (self.search in attrs[self.tag].split() and self.tag=="class") or\
+                            (attrs[self.tag] == self.search and not self.tag=="class")
+                    if match:
                         self.found=tag
                         self.result=""
             elif self.searchIn == "tag":
@@ -102,6 +105,7 @@ class HTMLSearch(HTMLParser):
 def get_post(document, pid=None):
     """Finds post using HTMLParser"""
     document = HTMLSearch(document)
+    topic, text, forum, user, pid = (None,) * 5  # le init
     if pid is not None:
         if document.getElementByID("msg").text:
             post = document.getElementByID("msg")
@@ -199,15 +203,21 @@ def get_page(document):
     topic, name, forum, pages, posts = (None,) * 5  # le init
     if document.getElementByID("msg").text == "":
         topic = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-1].text
-        topic, name = re.findall(r"""<a href=['"]viewtopic\.php\?id=(\d*)['"]>(.*)</a>""",topic)[0]
-        topic = int(topic)
-        name = re.search(r">(.+)<", name).group(1)
+        match = re.findall(r"""href=['"]viewtopic\.php\?id=(\d*)(?:.*?)['"]>(.*)</a>""",topic)
+        if match: 
+            topic, name = match[0]
+            topic = int(topic)
+            name = re.search(r">(.+)<", name).group(1)
+        else:
+            topic = None
         forum = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-2].text
-        forum = int(re.sub(r"""<a href=['"]viewforum\.php\?id=(\d*)['"]>.*</a>""",r"\1",forum))
-        header = document.getElementsByClass(f"pagelink conl")[0].getChildNodes()
+        match = re.sub(r"""href=['"]viewforum\.php\?id=(\d*)(?:.*?)['"]>.*</a>""",r"\1",forum)
+        if match:
+            forum = int()
+        header = document.getElementsByClass(f"pagelink")[0].getChildNodes()
         pages = [re.findall(r">(.+)<", x.text)[0] for x in header]
         pages = sorted(int(x) for x in pages if re.match(r"\d+", x))[-1]
-        posts = [x.text for x in raw.getChildNodes()]
+        posts = [x.text for x in raw.getChildNodes() if "link" not in re.search("class='(.+?)'", x.text)[0]]
     return {"rawHTML": raw.text, "tID": topic, "fID": forum, "pages": pages, "posts": posts, "title": name}
 
 
