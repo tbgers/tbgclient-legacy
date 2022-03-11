@@ -65,13 +65,15 @@ def get_elements_by_tag_name(document, tag):
 
 def get_user(document):
     a = etree.HTML(document)
-    if a.findall('.//div[@class="blockmenu"]'): raise NotImplementedError
+    if a.findall('.//div[@class="blockmenu"]'): 
+        # TODO: Parse current user's page
+        raise NotImplementedError
     a = a.findall(".//fieldset")
     a = [x.find(".//dl") for x in a]
-    k = [x[::2] for x in a]
-    v = [x[1::2] for x in a]
-    a = [{p.text: q for p, q in zip(x, y)} for x, y in zip(k, v)]
-    a = {k: v for x in a for k, v in x.items()}
+    k = [x[::2] for x in a] # labels
+    v = [x[1::2] for x in a] # values
+    a = [{p.text: q for p, q in zip(x, y)} for x, y in zip(k, v)] # zipper
+    a = {k: v for x in a for k, v in x.items()} # to dict
 
     r = {}
     s = {}
@@ -120,7 +122,7 @@ def get_page(document):
         match = re.search(r"(\d+)", list(header[-1].values())[0])
         if match:
             tid = int(match.group(1))
-        match = re.search(r"(\d+)", list(header[-1].values())[0])
+        match = re.search(r"(\d+)", list(header[-2].values())[0])
         if match:
             fid = int(match.group(1))
         if header[-1].text is None:
@@ -130,7 +132,7 @@ def get_page(document):
 
         # Check the page count
         header = document.find(".//p[@class='pagelink conl']")
-        if header:
+        if header is not None:
             pages = sorted(int(x.text) for x in header if re.match(r"\d+", x.text))[-1]
 
         # Check the post
@@ -173,6 +175,47 @@ def get_message(xml):
                     }
                     for x in msglist]
     return {"messages": messages, "info": info, "users": users}
+
+
+def get_forum_page(document):
+    document = etree.HTML(document)
+    err = document.find(".//div[@id='msg']")
+    if err is None:
+        table = document.find(".//tbody")
+        rows = table.findall("tr")
+        
+        # Get the header
+        header = document.find(".//ul[@class='crumbs']").findall(".//a[@href]")
+        match = re.search(r"(\d+)", list(header[-1].values())[0])
+        if match:
+            fid = int(match.group(1))
+        else:
+            fid = None
+        if header[-1].text is None:
+            name = header[-1][0].text
+        else: 
+            name = header[-1].text
+        
+        # Get all topics
+        result = []
+        for row in rows:
+            link = row.xpath(".//a[contains(@href,'viewtopic')]")[0]
+            title = link.text
+            tid = int(re.findall(r"(\d+)",link.get("href"))[0].replace(",",""))
+            posts = int(row.find("./td[@class='tc2']").text.replace(",",""))+1
+            views = int(row.find("./td[@class='tc3']").text.replace(",",""))
+            lastPost = int(re.findall(r"(\d+)",row.find("./td[@class='tcr']/a").get("href"))[0])
+            result.append({"title": title, "tID": tid, "postCount": posts, "views": views, "lastPost": lastPost})
+
+        # Check the page count
+        header = document.find(".//p[@class='pagelink conl']")
+        if header is not None:
+            pages = sorted(int(x.text) for x in header if re.match(r"\d+", x.text))[-1]
+        return {"rawHTML": etree.tostring(table), "topics": result, "pages": pages, "fID": fid, "title": name}
+    else:
+        return {"rawHTML": etree.tostring(table), "topics": None, "pages": None, "fID": None, "title": name}
+
+
 
 
 __all__ = dir(globals())

@@ -6,3 +6,7 @@ test.py
 
 # backup files
 *.*~
+
+# vim
+.swp
+

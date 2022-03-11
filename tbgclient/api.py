@@ -114,6 +114,13 @@ def get_topic(session, tid, page=1, **kwargs):
         raise TBGException.RequestException(f"Got {req.status_code} at GET")
     return session, req
     
+    
+def get_forum(session, fid, page=1, **kwargs):
+    req = session.get(f"https://tbgforums.com/forums/viewforum.php?id={fid}&p={page}", **kwargs)
+    if req.status_code > 400 and not silent:
+        raise TBGException.RequestException(f"Got {req.status_code} at GET")
+    return session, req
+    
 
 def login(session, user, password, **kwargs):
     req = session.post(f"https://tbgforums.com/forums/login.php?action=in",

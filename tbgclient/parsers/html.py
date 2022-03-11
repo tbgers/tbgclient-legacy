@@ -18,11 +18,11 @@ class HTMLSearch(HTMLParser):
     multiple=False
     tag=""
     disable=False
- 
+
     def __init__(self, text: str):
         self.text=text
         HTMLParser.__init__(self)
- 
+
     def resetSettings(self):
         self.found=None
         self.layers=0
@@ -32,14 +32,14 @@ class HTMLSearch(HTMLParser):
         self.results=[]
         self.multiple=False
         self.tag=""
- 
+
     def getElementByID(self, id: str):
         self.resetSettings()
         self.search=id
         self.tag="id"
         self.feed(self.text)
         return HTMLSearch(self.result)
- 
+
     def getElementsByClass(self, klas: str):
         self.resetSettings()
         self.search=klas
@@ -47,7 +47,7 @@ class HTMLSearch(HTMLParser):
         self.multiple=True
         self.feed(self.text)
         return [HTMLSearch(x) for x in self.results]
- 
+
     def getElementsByTagName(self, tag: str):
         self.resetSettings()
         self.search=tag
@@ -63,13 +63,13 @@ class HTMLSearch(HTMLParser):
         self.disable=True
         self.feed(self.text)
         return [HTMLSearch(x) for x in self.results]
- 
+
     def handle_starttag(self, tag, attrs):
         attrs=dict(attrs)
         if not self.found:
             if self.searchIn == "attrs":
                 if self.tag in attrs:
-                    # HACK: using self.tag to classify search mode 
+                    # HACK: using self.tag to classify search mode
                     match = (self.search in attrs[self.tag].split() and self.tag=="class") or\
                             (attrs[self.tag] == self.search and not self.tag=="class")
                     if match:
@@ -89,17 +89,20 @@ class HTMLSearch(HTMLParser):
             self.result+=f"<{tag}{''.join(' %s=%s'%(x,repr(attrs[x])) for x in attrs)}>"
             if self.found==tag:
                 self.layers+=1
- 
+
     def handle_endtag(self, tag):
         if self.found:self.result+=f"</{tag}>"
-        if self.found==tag: 
-            self.layers-=1 
-            if self.layers<=0: 
+        if self.found==tag:
+            self.layers-=1
+            if self.layers<=0:
                 self.found=None
                 if self.multiple: self.results.append(self.result)
- 
+
     def handle_data(self, data):
         if self.found:self.result+=data
+
+    def innerHTML(self):
+        return HTMLSearch(re.search(r">(.+)<", self.text).group(1))
 
 
 def get_post(document, pid=None):
@@ -120,7 +123,7 @@ def get_post(document, pid=None):
         pid = int(re.search(r"p(\d+)", document.text).group(1))
     text, time = (None, None)
     user = post.getElementsByTagName("dl")
-    if user: 
+    if user:
         user = user[0].getElementsByTagName("dt")[0].text
         user = re.sub(r"<dt *><strong *>(.*)</strong></dt>",r"\1",user)
         text = "".join(x.text for x in post.getElementsByClass("postmsg")[0].getElementsByTagName("p"))
@@ -128,12 +131,12 @@ def get_post(document, pid=None):
         time = re.search(r">(.*)<",time).group(1).split(" ")
         time[1] = datetime.datetime.strptime(time[1],"\u2009%H:%M:%S").time()
         if time[0] == "Today": time = datetime.datetime.combine(datetime.datetime.now().date(),time[1])
-        elif time[0] == "Yesterday": 
+        elif time[0] == "Yesterday":
             time = datetime.datetime.combine(datetime.datetime.now().date(),time[1])
             time += datetime.timedelta(days=-1)
         else: time = datetime.datetime.combine(datetime.datetime.strptime(time[0],"%Y-%b-%d").date(),time[1])
         time = str(time)
-    else: 
+    else:
         warnings.warn("Cannot find post ID in document",RuntimeWarning)
         user=None
     return {"rawHTML": post.text, "pID": pid, "tID": topic, "fID": forum, "user": user, "text": text, "time": time}
@@ -153,7 +156,7 @@ def get_elements_by_tag_name(document, tag):
 
 def get_user(document):
     a = HTMLSearch(document)
-    if a.getElementsByClass("blockmenu"): 
+    if a.getElementsByClass("blockmenu"):
         # TODO: Parse current user's page
         raise NotImplementedError
     a = a.getElementsByTagName("fieldset")
@@ -172,7 +175,7 @@ def get_user(document):
     if "Location" in a:
         r["location"] = a["Location"]
     if "Website" in a:
-        r["website"] = re.findall(">(.*)<", HTMLSearch(a["Website"]).getElementsByTagName("a")[0].text)[0]
+        r["website"] = HTMLSearch(a["Website"]).getElementsByTagName("a")[0].innerHTML().text
     if "Signature" in a:
         r["signature"] = re.findall(">(.*)<", a["Signature"])[0]
     if "Real name" in a:
@@ -204,18 +207,18 @@ def get_page(document):
     if document.getElementByID("msg").text == "":
         topic = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-1].text
         match = re.findall(r"""href=['"]viewtopic\.php\?id=(\d*)(?:.*?)['"]>(.*)</a>""",topic)
-        if match: 
+        if match:
             topic, name = match[0]
             topic = int(topic)
             name = re.search(r">(.+)<", name).group(1)
         else:
             topic = None
         forum = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-2].text
-        match = re.sub(r"""href=['"]viewforum\.php\?id=(\d*)(?:.*?)['"]>.*</a>""",r"\1",forum)
+        match = re.findall(r"""href=['"]viewforum\.php\?id=(\d*)(?:.*?)['"]>.*</a>""",forum)
         if match:
-            forum = int()
+            forum = int(match[0])
         header = document.getElementsByClass(f"pagelink")[0].getChildNodes()
-        pages = [re.findall(r">(.+)<", x.text)[0] for x in header]
+        pages = [x.innerHTML().text for x in header]
         pages = sorted(int(x) for x in pages if re.match(r"\d+", x))[-1]
         posts = [x.text for x in raw.getChildNodes() if "link" not in re.search("class='(.+?)'", x.text)[0]]
     return {"rawHTML": raw.text, "tID": topic, "fID": forum, "pages": pages, "posts": posts, "title": name}
@@ -242,7 +245,7 @@ def get_message(xml):
     messages = {}
     if msglist is not None:
         messages = [{
-                        "pID": x.get("id"), 
+                        "pID": x.get("id"),
                         "user": {"uID": x.get("userID"), "username": x[0].text.strip()},
                         "text": x[1].text.strip(),
                         "rawHTML": etree.tostring(x).decode(),
@@ -250,5 +253,37 @@ def get_message(xml):
                     }
                     for x in msglist]
     return {"messages": messages, "info": info, "users": users}
+
+
+def get_forum_page(document):
+    # TODO: Implement this
+    document = HTMLSearch(document)
+    if document.getElementByID("msg").text == "":
+        table = document.getElementsByTagName("tbody")[0]
+        rows = table.getElementsByTagName("tr")
+        forum = document.getElementsByClass("crumbs")[0].getElementsByTagName("a")[-1].text
+        match = re.findall(r"""href=['"]viewforum\.php\?id=(\d*)(?:.*?)['"]>(.*)</a>""",forum)
+        if match:
+            forum = int(match[0][0])
+            name = re.search(r">(.+)<", match[0][1]).group(1)
+        else:
+            forum, name = (None,)*2
+        result = []
+        for row in rows:
+            data = row.getElementsByTagName("td")
+            link = data[0].getElementsByTagName("a")[0]
+            title = link.innerHTML().text
+            tid = int(re.findall(r"(\d+)",link.text)[0].replace(",",""))
+            posts = int(data[1].innerHTML().text.replace(",",""))+1
+            views = int(data[2].innerHTML().text.replace(",",""))
+            lastPost = int(re.findall(r"(\d+)",data[3].innerHTML().text)[0].replace(",",""))
+            result.append({"title": title, "tID": tid, "postCount": posts, "views": views, "lastPost": lastPost})
+
+        header = document.getElementsByClass(f"pagelink")[0].getChildNodes()
+        pages = [x.innerHTML().text for x in header]
+        pages = sorted(int(x) for x in pages if re.match(r"\d+", x))[-1]
+        return {"rawHTML": table.text, "topics": result, "pages": pages, "fID": forum, "title": name}
+    else:
+        return {"rawHTML": table.text, "topics": None, "pages": None, "fID": None, "title": None}
 
 __all__ = dir(globals())

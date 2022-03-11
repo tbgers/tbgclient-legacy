@@ -8,6 +8,7 @@ from .Flags import Flags
 from .Post import Post
 from .TBGException import *
 from .Topic import Topic
+from .Forum import Forum
 from .User import User
 from .ChatConnection import ChatConnection
 from . import parsers
@@ -86,7 +87,19 @@ class TBGSession:
                 result.update(full=False)
             return result
         else:
-            return parsers.default.get_post(req.text, tid)
+            return parsers.default.get_page(req.text, tid)
+
+    def get_forum(self, fid: int):
+        """Gets a forum."""
+        self.session, req = api.get_forum(self.session, fid)
+        if Flags.RAW_DATA not in self.flags:
+            result = Forum(**parsers.default.get_forum_page(req.text), flags=self.flags, session=self)
+
+            if Flags.NO_INIT not in self.flags:
+                result.update(full=False)
+            return result
+        else:
+            return parsers.default.get_forum_page(req.text, fid)
 
     def get_user(self, uID: int):
         """Gets a user."""
@@ -102,7 +115,7 @@ class TBGSession:
         This is identical to ChatConnection(**kwargs, session=self).connect(channel).
         """
         connect = ChatConnection(**kwargs, session=self)
-        return connect.connect(channel)
+        return connect
 
     def post_reply(self, post: str, tid: int):
         """Posts a post.

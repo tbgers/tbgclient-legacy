@@ -33,21 +33,30 @@ class Topic:
         The page count of topic.
     flags: tbgclient.Flags
         Flags for the topic. See tbgclient.Flags for more information.
+    views: int
+        The amount of views this topic has. Only gets filled when this is 
+        made on tbgclient.Forum.
+    lastPost: int
+        The last post of this topic. Only gets filled when this is made on
+        tbgclient.Forum.
     """
     tID: int
     fID: int
     title: str
     pages: int
     flags: Flags = Flags.NONE
+    views: int
+    lastPost: int
     _pageSize: int = 0
     _pageCache: dict
     posts: list
 
     def __init__(self, **data):
         self.__dict__.update(data)
-        self._pageSize = len(self.posts)
+        if "posts" in data:
+            self._pageSize = len(self.posts)
+            del self.posts
         self._pageCache = {}
-        del self.posts
 
     def __repr__(self):
         return f"Topic(tID={repr(self.tID)},title={repr(self.title)}," +\
@@ -85,6 +94,8 @@ class Topic:
             pageData = self._pageCache[page]
         else:
             self.session.session, req = api.get_topic(self.session.session, self.tID, page)
+            if page != self.pages and self._pageSize == 0:
+                self._pageSize = len(self.posts)
             pageData = parsers.default.get_page(req.text)["posts"]
             self._pageCache[page] = pageData
         
@@ -95,7 +106,8 @@ class Topic:
                 post = Post(**x, session=self.session)
                 post.tID=self.tID
                 post.fID=self.fID
-                post.update()
+                if Flags.NO_INIT not in self.flags:
+                    post.update()
                 result.append(post)
             else: 
                 post = x
@@ -117,5 +129,5 @@ class Topic:
         return posts[post]
         
     def __getitem__(self, pNum):
-        return self.get_post(pNum)
+        return self.get_post(pNum + 1)
 

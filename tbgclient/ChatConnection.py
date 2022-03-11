@@ -121,11 +121,11 @@ class ChatConnection:
         """Decorates a function to be used as events."""
         if etype not in ["on_error", "on_message", "on_login"]:
             raise ValueError(f"Invalid event type: {etype}")
-        f = None
+
         def wrapper(func):
-            nonlocal f
             self.__setattr__(etype, func)
-        return f
+            return func
+        return wrapper
 
     def send_message(self, msg):
         if type(msg) is Post:
