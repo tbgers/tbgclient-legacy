@@ -1,4 +1,6 @@
 # tbgclient
+*This tool has been sunset from the migration of the TBGs to SMF. It will not work with the current TBGs.*
+
 A TBG API wrapper for Python.
 
 The name comes from CubeyTheCube's [scratchclient](https://github.com/CubeyTheCube/scratchclient), which this package is inspired by.
